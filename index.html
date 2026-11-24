@@ -70,6 +70,12 @@ button:focus-visible,input:focus-visible{outline:3px solid #1a6dff;outline-offse
 .racewrap{position:relative;border-radius:18px;overflow:hidden;box-shadow:0 6px 0 rgba(0,0,0,.3);background:#cf7b3e}
 #rc{display:block;width:100%}
 .under{margin-top:14px;justify-content:flex-end}
+#setBtn{position:absolute;right:max(12px,2vw);top:50%;transform:translateY(-50%);min-height:40px;padding:4px 14px;font-size:16px}
+#setBtn:active{transform:translateY(calc(-50% + 3px))}
+@media(max-width:600px){#setBtn{top:auto;bottom:12px;transform:none}header{padding-bottom:58px}}
+#set{position:fixed;inset:0;background:rgba(20,12,4,.6);display:none;align-items:center;justify-content:center;padding:14px;z-index:6}
+#set.on{display:flex}
+#set .card{width:min(760px,100%);max-height:calc(100vh - 28px);overflow:auto;margin:0}
 #res{position:fixed;inset:0;background:rgba(20,12,4,.6);display:none;align-items:center;justify-content:center;padding:14px;z-index:5}
 #res.on{display:flex}
 #res .card{width:min(560px,100%);max-height:calc(100vh - 28px);overflow:auto;margin:0}
@@ -95,7 +101,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #1a6dff;outline-offse
 </style>
 </head>
 <body>
-<header><h1>십이지신 대경주</h1><p>내기 한 판! 2~12명 · 매 판 속도 랜덤 · 중간 지점 돌발 이벤트</p></header>
+<header><h1>십이지신 대경주</h1><p>내기 한 판! 2~12명 · 매 판 속도 랜덤 · 중간 지점 돌발 이벤트</p><button class="ghost" id="setBtn" aria-haspopup="dialog">설정</button></header>
 
 <section class="screen on" id="s-setup">
   <div class="card">
@@ -109,25 +115,30 @@ button:focus-visible,input:focus-visible{outline:3px solid #1a6dff;outline-offse
     <div class="row quick" id="quick"></div>
   </div>
   <div class="card">
-    <h2>맵</h2>
-    <p class="hint">맵마다 깔리는 함정이 달라요.</p>
-    <div class="row quick" id="mapsel"></div>
-  </div>
-  <div class="card">
-    <h2>중간 이벤트</h2>
-    <p class="hint">랜덤이면 매 판 룰렛으로 정해지고, 하나를 고르면 룰렛 없이 바로 그 이벤트가 나와요.</p>
-    <div class="row quick" id="evsel"></div>
-  </div>
-  <div class="card">
     <h2>참가자 이름</h2>
     <p class="hint">비워두면 1번, 2번처럼 번호로 불러요. 이름은 이 브라우저에 기억돼요.</p>
     <div class="names" id="names"></div>
-    <div class="row" style="margin-top:18px;justify-content:space-between">
+    <p class="hint" id="curset" style="margin:16px 0 0"></p>
+    <div class="row" style="margin-top:12px;justify-content:space-between">
       <button class="ghost" id="clearNames">이름 모두 지우기</button>
       <button class="red big" id="toPick">동물 고르러 가기</button>
     </div>
   </div>
 </section>
+
+<div id="set" role="dialog" aria-modal="true" aria-labelledby="settitle">
+  <div class="card">
+    <h2 id="settitle">설정</h2>
+    <h2 style="font-size:21px;margin-top:14px">맵</h2>
+    <p class="hint">맵마다 깔리는 함정이 달라요.</p>
+    <div class="row quick" id="mapsel"></div>
+    <h2 style="font-size:21px;margin-top:22px">중간 이벤트</h2>
+    <p class="hint">랜덤이면 매 판 룰렛으로 정해지고, 하나를 고르면 룰렛 없이 바로 그 이벤트가 나와요.</p>
+    <div class="row quick" id="evsel"></div>
+    <p class="hint" style="margin-top:18px">바꾼 설정은 자동 저장되고, 다음 경주부터 적용돼요.</p>
+    <div class="row" style="justify-content:flex-end"><button class="red" id="setClose">닫기</button></div>
+  </div>
+</div>
 
 <section class="screen" id="s-pick">
   <div class="card">
@@ -355,8 +366,14 @@ function renderSetup(){
  $('#names').innerHTML=Array.from({length:N},(_,i)=>`<label><span class="dot" style="background:${LANEC[i]}">${i+1}</span><input id="nm${i}" maxlength="8" placeholder="${i+1}번" autocomplete="off" aria-label="${i+1}번 이름"></label>`).join('');
  for(let i=0;i<N;i++)$('#nm'+i).value=names[i]||'';
  renderMapSel();
+ $('#curset').textContent=`맵: ${mapPick>=0?MAPS[mapPick].n:'랜덤'} · 중간 이벤트: ${evPick>=0?EVS[evPick].n:'랜덤'} (오른쪽 위 설정에서 변경)`;
  $('#evsel').innerHTML=[{n:'랜덤 (룰렛)'}].concat(EVS).map((e,j)=>`<button class="${j-1===evPick?'on':''}" data-ev="${j-1}" aria-pressed="${j-1===evPick}">${e.n}</button>`).join('');
 }
+const openSet=()=>{readNames();renderSetup();$('#set').classList.add('on');$('#setClose').focus()};
+const closeSet=()=>{$('#set').classList.remove('on');$('#setBtn').focus({preventScroll:true})};
+$('#setBtn').onclick=openSet;$('#setClose').onclick=closeSet;
+$('#set').addEventListener('click',e=>{if(e.target.id==='set')closeSet()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#set').classList.contains('on'))closeSet()});
 function renderMapSel(){$('#mapsel').innerHTML=[{n:'랜덤',d:'매 판 무작위'}].concat(MAPS).map((m,j)=>`<button class="${j-1===mapPick?'on':''}" data-map="${j-1}" aria-pressed="${j-1===mapPick}">${m.n}<small style="display:block;font-size:13px;opacity:.8">${m.d}</small></button>`).join('')}
 $('#mapsel').onclick=e=>{const b=e.target.closest('button');if(!b)return;readNames();mapPick=+b.dataset.map;save();renderSetup()};
 $('#evsel').onclick=e=>{const b=e.target.closest('button');if(!b)return;readNames();evPick=+b.dataset.ev;save();renderSetup()};
@@ -401,15 +418,15 @@ const rem=r=>R.dir>0?1-r.pos:r.pos;
 function newRace(){
  const mp=MAPS[mapPick>=0?mapPick:Math.random()*MAPS.length|0],pick=()=>mp.items[Math.random()*mp.items.length|0];
  R={rs:[...Array(N).keys()].map(i=>({i,a:picks[i],name:pname(i),pos:0,base:rnd(.9,1.1),nz:1,nzT:1,nzt:0,inc:null,incT:0,cd:rnd(2,5),fin:false,ft:0,rank:0,ph:rnd(0,6),seed:rnd(0,9),lb:false,bub:'',bubT:0,dust:0})),
-  dir:1,g:1,T:rnd(16,19),el:0,phase:'count',cd:2.4,lastCd:4,leadId:-1,ovCd:0,final:false,finT:0,photo:false,shake:0,beat:0,bk:0,goT:0,ev:null,evDone:false,order:[],slowEnd:-1,boostEnd:-1,parts:[],map:mp,items:[...Array(N).keys()].map(i=>({lane:i,pos:rnd(.12,.45),k:pick(),used:false,drop:-1})),flash:0,log:`${mp.n} 맵! 곧 출발합니다`};
+  dir:1,g:1,T:rnd(16,19),el:0,phase:'count',cd:2.4,lastCd:4,leadId:-1,ovCd:0,final:false,finT:0,photo:false,shake:0,beat:0,bk:0,goT:0,ev:null,evDone:false,order:[],slowEnd:-1,boostEnd:-1,parts:[],map:mp,evp:evPick,items:[...Array(N).keys()].map(i=>({lane:i,pos:rnd(.12,.45),k:pick(),used:false,drop:-1})),flash:0,log:`${mp.n} 맵! 곧 출발합니다`};
 }
 function startRace(){show('race');fit();newRace()}
 function say(r,txt,d){r.bub=txt;r.bubT=d||1.5}
 function ranking(){return R.order.concat(R.rs.filter(r=>!r.fin).sort((a,b)=>rem(a)-rem(b)))}
 function puff(x,y,n,col,sp){for(let k=0;k<n;k++)R.parts.push({x,y,vx:rnd(-1,1)*sp,vy:rnd(-1,.2)*sp,r:rnd(3,7),l:rnd(.4,.8),c:col})}
 function startEvent(){
- const rl=evPick>=0?0:RL;/* 이벤트를 직접 골랐으면 룰렛 없이 바로 */
- const k=evPick>=0?evPick:Math.random()*5|0,from=R.rs.map(r=>r.pos);let to=from.slice();
+ const rl=R.evp>=0?0:RL;/* 이벤트를 직접 골랐으면 룰렛 없이 바로 */
+ const k=R.evp>=0?R.evp:Math.random()*5|0,from=R.rs.map(r=>r.pos);let to=from.slice();
  let desc='';
  if(k===0)to=from.map(p=>clamp(p+(Math.random()<.5?-1:1)*rnd(.04,.13),.03,.9));
  if(k===4){const v=R.rs[Math.random()*N|0];to[v.i]=0;R.victim=v.i;desc=`${v.name}(${AN[v.a].n}) 혼자 출발선으로 슝~`}
