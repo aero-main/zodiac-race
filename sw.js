@@ -1,6 +1,6 @@
 // 오프라인 실행용 서비스 워커: 게임 파일을 저장해 두고, 인터넷이 없으면 저장본으로 실행
 // 게임을 고친 뒤 배포할 때는 VERSION 숫자를 올려야 폰에 새 버전이 받아짐
-const VERSION = 'zr-v2';
+const VERSION = 'zr-v3';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/i192.png', './icons/i512.png', './icons/i180.png'];
 
 self.addEventListener('install', e => {
